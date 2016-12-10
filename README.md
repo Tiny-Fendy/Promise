@@ -1,0 +1,1 @@
+自己参照网络博客实现的一个JavaScript Promise对象
