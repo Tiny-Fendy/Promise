@@ -29,7 +29,5 @@ function clone(target, obj) {
 
             });
         }
-
-
     }
 }
