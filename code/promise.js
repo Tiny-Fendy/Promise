@@ -35,9 +35,11 @@ function PromiseF(callback) {
     }
 
     try {
-        setTimeout(() => {
+        if (typeof callback === 'function') {
             callback(resolve, reject);
-        }, 0);
+        } else {
+            console.error('callback must be a function');
+        }
     } catch (e) {
         reject(e);
     }
@@ -62,8 +64,12 @@ PromiseF.prototype = {
         }
     },
 
-    catch(rej) {
-        return this.then(undefined, rej);
+    catch(callback) {
+        if (this.state === Reject) {
+            if (typeof callback === 'function') {
+                return PromiseF.resolve(callback(this.msg));
+            }
+        }
     },
 
     // finally的表现与then一致，只不过不区分状态
@@ -129,3 +135,5 @@ PromiseF.reject = msg => {
         rej(msg);
     });
 };
+
+module.exports = PromiseF;
