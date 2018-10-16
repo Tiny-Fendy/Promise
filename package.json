@@ -1,0 +1,31 @@
+{
+  "name": "promise",
+  "version": "1.0.0",
+  "description": "promise",
+  "main": "code/promise.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha --require intelli-espower-loader test/promise.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tiny-Fendy/Promise.git"
+  },
+  "keywords": [
+    "promise"
+  ],
+  "author": "fengdi",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Tiny-Fendy/Promise/issues"
+  },
+  "homepage": "https://github.com/Tiny-Fendy/Promise#readme",
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "intelli-espower-loader": "^1.0.1",
+    "mocha": "^5.2.0",
+    "power-assert": "^1.6.1"
+  }
+}
