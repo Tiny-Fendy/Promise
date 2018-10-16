@@ -1,8 +1,4 @@
 /**
- * created by 2016-12-10
- * */
-
-/**
  * Reconstruction by 2018-04-07
  * https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Promise
  * */
@@ -68,6 +64,8 @@ PromiseF.prototype = {
         if (this.state === Reject) {
             if (typeof callback === 'function') {
                 return PromiseF.resolve(callback(this.msg));
+            } else {
+                throw '[catch]callback must be a function';
             }
         }
     },
