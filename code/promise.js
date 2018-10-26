@@ -7,6 +7,28 @@ const Pending = 'pending';
 const Resolve = 'resolve';
 const Reject = 'reject';
 
+function getPmByState(state, msg) {
+    return PromiseF[state === Resolve ? 'resolve' : 'reject'](msg);
+}
+
+function returnPromise(callback, state, msg) {
+    if (typeof callback === 'function') {
+        try {
+            const out = callback(msg);
+
+            if (out instanceof PromiseF) {
+                return out;
+            } else {
+                return PromiseF.resolve(out);
+            }
+        } catch (e) {
+            return PromiseF.reject(e);
+        }
+    } else {
+        return getPmByState(state, msg);
+    }
+}
+
 function PromiseF(callback) {
     let self = this;
     this.state = Pending;
@@ -34,7 +56,7 @@ function PromiseF(callback) {
         if (typeof callback === 'function') {
             callback(resolve, reject);
         } else {
-            console.error('callback must be a function');
+            reject();
         }
     } catch (e) {
         reject(e);
@@ -43,46 +65,22 @@ function PromiseF(callback) {
 
 PromiseF.prototype = {
     then(res, rej) {
-        res = typeof res === 'function' ? res : function (msg) {};
-        rej = typeof rej === 'function' ? rej : function (msg) {};
+        const callback = this.state === Resolve ? res : rej;
 
-        try {
-            let callback = this.state === Resolve ? res : rej;
-            let out = callback(this.msg);
-
-            if (out instanceof PromiseF) {
-                return out;
-            } else {
-                return PromiseF.resolve(out);
-            }
-        } catch (e) {
-            return PromiseF.reject(e);
-        }
+        return returnPromise(callback, this.state, this.msg);
     },
 
     catch(callback) {
         if (this.state === Reject) {
-            if (typeof callback === 'function') {
-                return PromiseF.resolve(callback(this.msg));
-            } else {
-                throw '[catch]callback must be a function';
-            }
+            return returnPromise(callback, this.state, this.msg);
+        } else {
+            return getPmByState(this.state, this.msg);
         }
     },
 
     // finally的表现与then一致，只不过不区分状态
     finally(callback) {
-        callback = typeof callback === 'function' ? callback() : callback;
-
-        try {
-            if (callback instanceof PromiseF) {
-                return callback;
-            } else {
-                return PromiseF.resolve(this.msg);
-            }
-        } catch (e) {
-            return PromiseF.reject(e);
-        }
+        return returnPromise(callback, this.state, this.msg);
     }
 };
 
@@ -123,15 +121,11 @@ PromiseF.all = array => {
 };
 
 PromiseF.resolve = msg => {
-    return new PromiseF((res) => {
-         res(msg);
-    });
+    return new PromiseF((res) => { res(msg) });
 };
 
 PromiseF.reject = msg => {
-    return new PromiseF((res, rej) => {
-        rej(msg);
-    });
+    return new PromiseF((res, rej) => { rej(msg) });
 };
 
 module.exports = PromiseF;
