@@ -2,9 +2,10 @@ const assert = require('power-assert');
 const Promise = require('../code/promise');
 
 const resP = new Promise(res => {
+    console.log('init');
     setTimeout(() => {
         res(123);
-    });
+    }, 100);
 });
 
 const resolveP = Promise.resolve('resolve');
@@ -17,7 +18,7 @@ describe('Promise测试', () => {
         assert.ok(await resP === 123, 'sv result 123');
     });
 
-    it ('promise then', async () => {
+    /*it ('promise then', async () => {
         assert.ok(await resP.then(res => res) === 123, '执行on resolve');
         assert.ok(await rejectP.then(() => {}, rej => rej) === 'reject', '执行on reject');
         assert.ok(await resolveP.then(33424).then(res => res) === 'resolve', 'then不传function不执行');
@@ -40,10 +41,24 @@ describe('Promise测试', () => {
     });
 
     it('promise all', async () => {
-
+        assert.ok((await Promise.all([])).length === 0, '传入空数组返回空数组');
+        assert.ok(await Promise.all([resolveP]).then(res => res[0]) === 'resolve', '数组resolve时返回resolve-Promise');
+        assert.ok(await Promise.all('resolve').then(res => res.join('')) === 'resolve', '可以接受字符串');
+        assert.ok(await Promise.all([resolveP, rejectP]).catch(res => res[1]) === 'reject', '只要有一个reject那么返回reject');
     });
 
-    it('resolve && reject', () => {
+    it('race', async () => {
+        const slow = new Promise(res => {
+            setTimeout(() => {
+                res('slow');
+            }, 500);
+        });
+        const fast = new Promise(res => {
+            setTimeout(() => {
+                res('fast');
+            }, 200);
+        });
 
-    });
+        assert.ok(await Promise.race([slow, fast]).then(res => res) === 'short', '竞速，快的先接受');
+    });*/
 });

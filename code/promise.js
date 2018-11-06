@@ -85,39 +85,65 @@ PromiseF.prototype = {
 };
 
 PromiseF.all = array => {
-    if (typeof array === 'string') {
+    if (typeof array !== 'string' && !(array instanceof Array)) {
+        return PromiseF.reject(new Error('error'));
+    } else if (!array.length) {
+        return PromiseF.resolve([]);
+    } else if (typeof array === 'string') {
         array = array.split('');
     }
 
     return new PromiseF((res, rej) => {
         let out = [];
         let flag = 0;
-        let is = array.every((p, index) => {
+        let is = true;
+        const over = (msg, index) => {
+            out[index] = msg;
+            flag++;
+            if (flag >= array.length) {
+                is ? res(out) : rej(out);
+            }
+        };
+        array.forEach((p, index) => {
             if (p instanceof PromiseF) {
-                let isResolved = true;
-
-                p.then(msg => {
-                    out[index] = msg;
-                    flag++;
-                }, msg => {
-                    out[index] = msg;
-                    flag++;
-                    isResolved = false;
+                p.then(msg => msg, msg => {
+                    is = false;
+                    return msg;
+                }).finally(msg => {
+                    over(msg, index);
                 });
-
-                return isResolved;
             } else {
-                out[index] = p;
-                flag++;
-
-                return true;
+                over(p, index);
             }
         });
-
-        if (flag >= array.length) {
-            is ? res(out) : rej(out);
-        }
     });
+};
+
+PromiseF.race = (array) => {
+    if (!array.length) {
+        return PromiseF.resolve([]);
+    } else if (typeof array === 'string') {
+        return PromiseF.resolve(array[0]);
+    } if (array instanceof Array) {
+        return new PromiseF((res, rej) => {
+            let flag = true;
+            array.forEach(p => {
+               if (flag) {
+                   p.then(msg => {
+                       console.log(11111);
+                       res(msg);
+                   }, msg => {
+                       console.log(22222);
+                       rej(msg);
+                   }).finally(() => {
+                       flag = false;
+                   });
+               }
+            });
+        });
+    } else {
+        return PromiseF.reject('error');
+    }
 };
 
 PromiseF.resolve = msg => {
