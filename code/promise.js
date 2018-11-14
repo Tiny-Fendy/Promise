@@ -11,12 +11,28 @@ function getPmByState(state, msg) {
     return PromiseF[state === Resolve ? 'resolve' : 'reject'](msg);
 }
 
+function listCallback(out, resolve, reject) {
+    try {
+        if (isPromise(out)) {
+            out.then(resolve, reject)
+        } else {
+            return resolve(out);
+        }
+    } catch (e) {
+        reject(e);
+    }
+}
+
+function isPromise(p) {
+    return (p instanceof PromiseF || p instanceof Promise) && p.then;
+}
+
 function returnPromise(callback, state, msg) {
     if (typeof callback === 'function') {
         try {
             const out = callback(msg);
 
-            if (out instanceof PromiseF) {
+            if (isPromise(out)) {
                 return out;
             } else {
                 return PromiseF.resolve(out);
@@ -33,11 +49,16 @@ function PromiseF(callback) {
     let self = this;
     this.state = Pending;
     this.msg = '';
+    this.resList = [];
+    this.rejList = [];
 
     function resolve(msg) {
         if (self.state === Pending) {
             self.state = Resolve;
             self.msg = msg;
+            self.resList.forEach(fn => {
+                fn(msg);
+            });
         } else if (self.state === Reject) {
             throw '[error]res, rej不可同时调用';
         }
@@ -47,6 +68,9 @@ function PromiseF(callback) {
         if (self.state === Pending) {
             self.state = Reject;
             self.msg = msg;
+            self.rejList.forEach(fn => {
+                fn(msg);
+            });
         } else if (self.state === Resolve) {
             throw '[error]res，rej不可同时调用';
         }
@@ -65,22 +89,29 @@ function PromiseF(callback) {
 
 PromiseF.prototype = {
     then(res, rej) {
-        const callback = this.state === Resolve ? res : rej;
+        if (this.state !== Pending) {
+            const callback = this.state === Resolve ? res : rej;
 
-        return returnPromise(callback, this.state, this.msg);
+            return returnPromise(callback, this.state, this.msg);
+        } else {
+            return new PromiseF((resolve, reject) => {
+                this.resList.push((msg) => {
+                    listCallback(res(msg), resolve, reject);
+                });
+                this.rejList.push((msg) => {
+                    listCallback(rej(msg), resolve, reject);
+                });
+            });
+        }
     },
 
     catch(callback) {
-        if (this.state === Reject) {
-            return returnPromise(callback, this.state, this.msg);
-        } else {
-            return getPmByState(this.state, this.msg);
-        }
+        return this.then(null, callback);
     },
 
     // finally的表现与then一致，只不过不区分状态
     finally(callback) {
-        return returnPromise(callback, this.state, this.msg);
+        return this.then(callback, callback);
     }
 };
 
@@ -105,7 +136,7 @@ PromiseF.all = array => {
             }
         };
         array.forEach((p, index) => {
-            if (p instanceof PromiseF) {
+            if (isPromise(p)) {
                 p.then(msg => msg, msg => {
                     is = false;
                     return msg;
@@ -127,13 +158,12 @@ PromiseF.race = (array) => {
     } if (array instanceof Array) {
         return new PromiseF((res, rej) => {
             let flag = true;
+
             array.forEach(p => {
                if (flag) {
                    p.then(msg => {
-                       console.log(11111);
-                       res(msg);
+                       res(msg, 111);
                    }, msg => {
-                       console.log(22222);
                        rej(msg);
                    }).finally(() => {
                        flag = false;
